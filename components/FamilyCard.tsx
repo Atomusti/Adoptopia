@@ -7,6 +7,7 @@ interface FamilyCardProps {
   isAssigned?: boolean;
   isHinted?: boolean;
   isCompact?: boolean;
+  showSpaceInfo?: boolean;
   onClick?: () => void;
 }
 
@@ -16,6 +17,7 @@ export default function FamilyCard({
   isAssigned = false,
   isHinted = false,
   isCompact = false,
+  showSpaceInfo = false,
   onClick,
 }: FamilyCardProps) {
   const getTraits = () => {
@@ -66,6 +68,11 @@ export default function FamilyCard({
           MX NOISE LV{family.noiseLimit} | NRG LV{family.energyMatch}
           {family.hasAllergy ? ' | SENS+' : ''}
         </div>
+        {showSpaceInfo && (
+          <div className={`text-[8px] font-bold uppercase ${family.spaceType === 'house' ? 'text-[#00ff88]' : 'text-[#ffff00]'}`}>
+            {family.spaceType === 'house' ? 'TYPE: HOUSE' : 'TYPE: APT'}
+          </div>
+        )}
         {isAssigned && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/80">
             <span className="text-[9px] text-[#ff00ff] border border-[#ff00ff]/60 px-2 py-0.5 uppercase">
@@ -99,6 +106,11 @@ export default function FamilyCard({
       </div>
 
       <div className="flex flex-col gap-1">
+        {showSpaceInfo && (
+          <span className={`text-xs font-bold uppercase ${family.spaceType === 'house' ? 'text-[#00ff88]' : 'text-[#ffff00]'}`}>
+            {family.spaceType === 'house' ? '🏡 YARD ACCESS: YES' : '🏢 YARD ACCESS: NO'}
+          </span>
+        )}
         {getTraits().map((t, i) => (
           <span
             key={i}

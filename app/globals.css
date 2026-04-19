@@ -124,3 +124,46 @@ body {
 .animate-level-validated {
   animation: levelValidated 3s ease-in-out forwards;
 }
+
+@keyframes floatUp {
+  0%   { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-24px); }
+}
+
+@keyframes scoreShake {
+  0%,100% { transform: translateX(0); }
+  25%      { transform: translateX(-3px); }
+  75%      { transform: translateX(3px); }
+}
+
+@keyframes scoreFlashGreen {
+  0%, 100% { color: inherit; }
+  50% { color: #00ff88; }
+}
+
+@keyframes scoreFlashRed {
+  0%, 100% { color: inherit; }
+  50% { color: #ff4444; }
+}
+
+.animate-score-shake {
+  animation: scoreShake 0.4s ease-out;
+}
+
+.animate-score-flash-green {
+  animation: scoreFlashGreen 0.4s ease-out;
+}
+
+.animate-score-flash-red {
+  animation: scoreFlashRed 0.4s ease-out;
+}
+
+@keyframes proceedGlow {
+  0%   { box-shadow: 0 0 10px #7700ff, 0 0 20px #7700ff; }
+  50%  { box-shadow: 0 0 20px #ff00ff, 0 0 40px #ff00ff; }
+  100% { box-shadow: 0 0 10px #7700ff, 0 0 20px #7700ff; }
+}
+
+.proceed-btn {
+  animation: proceedGlow 2s ease-in-out infinite;
+}

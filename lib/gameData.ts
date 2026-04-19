@@ -12,6 +12,7 @@ export interface Animal {
   allergyRisk: boolean;
   noiseLevel: number;
   energyLevel: number;
+  spaceNeed: "small" | "large";
 }
 
 export interface Family {
@@ -22,6 +23,7 @@ export interface Family {
   hasAllergy: boolean;
   noiseLimit: number;
   energyMatch: number;
+  spaceType: "apartment" | "house";
 }
 
 export const SHELTER_POSITION: Position = { x: 4, y: 4 };
@@ -38,7 +40,8 @@ export const gameData: { animals: Animal[]; families: Family[] } = {
       quirk: "Meows only in a thick French accent",
       allergyRisk: true,
       noiseLevel: 4,
-      energyLevel: 2
+      energyLevel: 2,
+      spaceNeed: "small"
     },
     {
       id: "a2",
@@ -48,7 +51,8 @@ export const gameData: { animals: Animal[]; families: Family[] } = {
       quirk: "Barks in perfect rhythm to any music playing",
       allergyRisk: false,
       noiseLevel: 5,
-      energyLevel: 5
+      energyLevel: 5,
+      spaceNeed: "large"
     },
     {
       id: "a3",
@@ -58,7 +62,8 @@ export const gameData: { animals: Animal[]; families: Family[] } = {
       quirk: "Dramatically faints when ignored for more than 5 minutes",
       allergyRisk: false,
       noiseLevel: 1,
-      energyLevel: 3
+      energyLevel: 3,
+      spaceNeed: "small"
     },
     {
       id: "a4",
@@ -68,7 +73,8 @@ export const gameData: { animals: Animal[]; families: Family[] } = {
       quirk: "Tries to assassinate laser pointers using martial arts",
       allergyRisk: true,
       noiseLevel: 2,
-      energyLevel: 4
+      energyLevel: 4,
+      spaceNeed: "small"
     },
     {
       id: "a5",
@@ -78,7 +84,8 @@ export const gameData: { animals: Animal[]; families: Family[] } = {
       quirk: "Exclusively demands kibble at exactly midnight",
       allergyRisk: true,
       noiseLevel: 3,
-      energyLevel: 2
+      energyLevel: 2,
+      spaceNeed: "small"
     },
     {
       id: "a6",
@@ -88,7 +95,8 @@ export const gameData: { animals: Animal[]; families: Family[] } = {
       quirk: "Solves quantum mechanics problems by twitching his nose",
       allergyRisk: false,
       noiseLevel: 1,
-      energyLevel: 5
+      energyLevel: 5,
+      spaceNeed: "large"
     },
     {
       id: "a7",
@@ -98,7 +106,8 @@ export const gameData: { animals: Animal[]; families: Family[] } = {
       quirk: "Believes he is completely invisible when he closes his eyes",
       allergyRisk: false,
       noiseLevel: 4,
-      energyLevel: 4
+      energyLevel: 4,
+      spaceNeed: "large"
     },
     {
       id: "a8",
@@ -108,17 +117,18 @@ export const gameData: { animals: Animal[]; families: Family[] } = {
       quirk: "Harshly judges your fashion choices with aggressive blinking",
       allergyRisk: true,
       noiseLevel: 2,
-      energyLevel: 1
+      energyLevel: 1,
+      spaceNeed: "small"
     }
   ],
   families: [
-    { id: "f1", name: "The Smiths", emoji: "🏡", gridPosition: { x: 1, y: 1 }, hasAllergy: false, noiseLimit: 4, energyMatch: 5 },
-    { id: "f2", name: "The Johnsons", emoji: "🏠", gridPosition: { x: 8, y: 2 }, hasAllergy: true, noiseLimit: 2, energyMatch: 2 },
-    { id: "f3", name: "The Williams", emoji: "🏘️", gridPosition: { x: 2, y: 8 }, hasAllergy: false, noiseLimit: 5, energyMatch: 4 },
-    { id: "f4", name: "The Browns", emoji: "🏚️", gridPosition: { x: 9, y: 9 }, hasAllergy: false, noiseLimit: 1, energyMatch: 3 },
-    { id: "f5", name: "The Garcias", emoji: "🛖", gridPosition: { x: 5, y: 1 }, hasAllergy: true, noiseLimit: 3, energyMatch: 2 },
-    { id: "f6", name: "The Millers", emoji: "⛺", gridPosition: { x: 0, y: 5 }, hasAllergy: false, noiseLimit: 4, energyMatch: 5 },
-    { id: "f7", name: "The Davis", emoji: "🏰", gridPosition: { x: 8, y: 7 }, hasAllergy: true, noiseLimit: 2, energyMatch: 4 },
-    { id: "f8", name: "The Martinez", emoji: "🏯", gridPosition: { x: 3, y: 3 }, hasAllergy: false, noiseLimit: 5, energyMatch: 1 }
+    { id: "f1", name: "The Smiths", emoji: "🏡", gridPosition: { x: 1, y: 1 }, hasAllergy: false, noiseLimit: 4, energyMatch: 5, spaceType: "house" },
+    { id: "f2", name: "The Johnsons", emoji: "🏠", gridPosition: { x: 8, y: 2 }, hasAllergy: true, noiseLimit: 2, energyMatch: 2, spaceType: "apartment" },
+    { id: "f3", name: "The Williams", emoji: "🏘️", gridPosition: { x: 2, y: 8 }, hasAllergy: false, noiseLimit: 5, energyMatch: 4, spaceType: "house" },
+    { id: "f4", name: "The Browns", emoji: "🏚️", gridPosition: { x: 9, y: 9 }, hasAllergy: false, noiseLimit: 1, energyMatch: 3, spaceType: "apartment" },
+    { id: "f5", name: "The Garcias", emoji: "🛖", gridPosition: { x: 5, y: 1 }, hasAllergy: true, noiseLimit: 3, energyMatch: 2, spaceType: "house" },
+    { id: "f6", name: "The Millers", emoji: "⛺", gridPosition: { x: 0, y: 5 }, hasAllergy: false, noiseLimit: 4, energyMatch: 5, spaceType: "house" },
+    { id: "f7", name: "The Davis", emoji: "🏰", gridPosition: { x: 8, y: 7 }, hasAllergy: true, noiseLimit: 2, energyMatch: 4, spaceType: "apartment" },
+    { id: "f8", name: "The Martinez", emoji: "🏯", gridPosition: { x: 3, y: 3 }, hasAllergy: false, noiseLimit: 5, energyMatch: 1, spaceType: "house" }
   ]
 };

@@ -7,6 +7,7 @@ interface AnimalCardProps {
   isAssigned?: boolean;
   isHinted?: boolean;
   isCompact?: boolean;
+  showSpaceInfo?: boolean;
   onClick?: () => void;
 }
 
@@ -16,6 +17,7 @@ export default function AnimalCard({
   isAssigned = false,
   isHinted = false,
   isCompact = false,
+  showSpaceInfo = false,
   onClick,
 }: AnimalCardProps) {
   const getTraits = () => {
@@ -67,6 +69,11 @@ export default function AnimalCard({
         <div className="text-[9px] text-cyan-500/90 uppercase mb-1">
           NOISE: LV{animal.noiseLevel} | NRG: LV{animal.energyLevel}
         </div>
+        {showSpaceInfo && (
+          <div className={`text-[8px] font-bold uppercase mb-1 ${animal.spaceNeed === 'large' ? 'text-[#ff9900]' : 'text-[#00ffff]'}`}>
+            {animal.spaceNeed === 'large' ? 'SPACE: HIGH' : 'SPACE: LOW'}
+          </div>
+        )}
         {animal.allergyRisk && (
           <span className="text-[8px] text-[#ff4444] font-bold border border-[#ff4444]/50 px-1 py-0.5 w-fit uppercase">
             ALLERGY RISK
@@ -106,6 +113,11 @@ export default function AnimalCard({
 
       <div className="flex flex-col gap-1">
         <span className="text-cyan-600/80 italic text-xs uppercase">{animal.species} unit</span>
+        {showSpaceInfo && (
+          <span className={`text-xs font-bold uppercase ${animal.spaceNeed === 'large' ? 'text-[#ff9900]' : 'text-[#00ffff]'}`}>
+            {animal.spaceNeed === 'large' ? '📐 SPACE REQ: HIGH' : '📐 SPACE REQ: LOW'}
+          </span>
+        )}
         {getTraits().map((t, i) => (
           <span
             key={i}

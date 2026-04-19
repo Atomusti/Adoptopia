@@ -5,11 +5,12 @@ interface DetailModalProps {
   item: Animal | Family | null;
   type: 'animal' | 'family';
   isAssigned: boolean;
+  showSpaceInfo?: boolean;
   onClose: () => void;
   onSelect: () => void;
 }
 
-export default function DetailModal({ item, type, isAssigned, onClose, onSelect }: DetailModalProps) {
+export default function DetailModal({ item, type, isAssigned, showSpaceInfo = false, onClose, onSelect }: DetailModalProps) {
   if (!item) return null;
 
   const renderMeter = (level: number, max: number = 5) => {
@@ -68,6 +69,17 @@ export default function DetailModal({ item, type, isAssigned, onClose, onSelect 
               )}
             </div>
 
+            {showSpaceInfo && (
+              <div className="mt-2">
+                <span className="text-cyan-600 tracking-widest">SPACE REQUIREMENT: </span>
+                {(item as Animal).spaceNeed === 'large' ? (
+                  <span className="font-bold text-[#ff9900]">📐 HIGH (YARD PREFERRED)</span>
+                ) : (
+                  <span className="font-bold text-[#00ffff]">📐 LOW</span>
+                )}
+              </div>
+            )}
+
             <div className="mt-2 p-2 border border-cyan-900 bg-black/40">
               <span className="text-gray-500">STATUS: </span>
               <span className={isAssigned ? 'text-amber-500' : 'text-emerald-400'}>
@@ -120,6 +132,17 @@ export default function DetailModal({ item, type, isAssigned, onClose, onSelect 
                 <span className="text-emerald-500 font-bold drop-shadow-[0_0_5px_#10b981]">✅ NO SENSITIVITIES</span>
               )}
             </div>
+
+            {showSpaceInfo && (
+              <div className="mt-2">
+                <span className="text-fuchsia-600 tracking-widest">YARD ACCESS: </span>
+                {(item as Family).spaceType === 'house' ? (
+                  <span className="font-bold text-[#00ff88]">🏡 YES</span>
+                ) : (
+                  <span className="font-bold text-[#ffff00]">🏢 NO (APARTMENT)</span>
+                )}
+              </div>
+            )}
 
             <div className="mt-2 p-2 border border-fuchsia-900 bg-black/40">
               <span className="text-gray-500">STATUS: </span>

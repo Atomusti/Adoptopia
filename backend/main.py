@@ -48,6 +48,7 @@ class AnimalData(BaseModel):
     allergyRisk: bool
     noiseLevel: int
     energyLevel: int
+    spaceNeed: str = "small"
 
 class FamilyData(BaseModel):
     id: str
@@ -56,6 +57,7 @@ class FamilyData(BaseModel):
     hasAllergy: bool
     noiseLimit: int
     energyMatch: int
+    spaceType: str = "apartment"
 
 class OptimizeRequest(BaseModel):
     animals: List[AnimalData]

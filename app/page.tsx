@@ -7,7 +7,9 @@ import AnimalCard from '@/components/AnimalCard';
 import FamilyCard from '@/components/FamilyCard';
 import DetailModal from '@/components/DetailModal';
 import HintSystem, { CostPayment } from '@/components/HintSystem';
+import LevelSelect from '@/components/LevelSelect';
 import { gameData, Animal, Family, SHELTER_POSITION, MAX_FUEL, Position } from '@/lib/gameData';
+import { level2Config, type LevelConfig } from '@/lib/levels';
 import { calculatePath } from '@/lib/pathfinding';
 import {
   callOptimize,
@@ -24,6 +26,63 @@ interface Assignment {
   animal: Animal;
   family: Family;
   status: 'moving' | 'delivered';
+}
+
+type CompatibilityWarning = {
+  type: 'NOISE' | 'ALLERGY' | 'ENERGY' | 'SPACE';
+  message: string;
+  penalty: number;
+};
+
+function evaluateCompatibility(animal: Animal, family: Family, currentLevel: LevelConfig | null) {
+  let penalty = 0;
+  const warnings: CompatibilityWarning[] = [];
+
+  if (animal.noiseLevel > family.noiseLimit) {
+    const diff = animal.noiseLevel - family.noiseLimit;
+    const p = diff * 40;
+    penalty += p;
+    warnings.push({
+      type: 'NOISE',
+      message: `NOISE VIOLATION: LV${animal.noiseLevel} EXCEEDS LIMIT LV${family.noiseLimit}`,
+      penalty: p,
+    });
+  }
+
+  if (animal.allergyRisk && family.hasAllergy) {
+    penalty += 120;
+    warnings.push({
+      type: 'ALLERGY',
+      message: 'ALLERGY CONFLICT: SENSITIVITY DETECTED',
+      penalty: 120,
+    });
+  }
+
+  const energyDelta = Math.abs(animal.energyLevel - family.energyMatch);
+  if (energyDelta >= 3) {
+    const p = energyDelta * 15;
+    penalty += p;
+    warnings.push({
+      type: 'ENERGY',
+      message: `ENERGY MISMATCH: DELTA ${energyDelta}`,
+      penalty: p,
+    });
+  }
+
+  if (currentLevel?.id === 2 && currentLevel?.hasSpaceConstraint) {
+    if (animal.spaceNeed === 'large' && family.spaceType === 'apartment') {
+      const p = 100;
+      penalty += p;
+      warnings.push({
+        type: 'SPACE',
+        message: `INSUFFICIENT SPACE: ${animal.name} REQUIRES YARD ACCESS`,
+        penalty: p,
+      });
+    }
+  }
+
+  const earned = Math.max(-200, 100 - penalty);
+  return { warnings, penalty, earned, isClean: warnings.length === 0 };
 }
 
 function cloneGameAnimals(): Animal[] {
@@ -66,25 +125,27 @@ function mergeValidatedFamilies(base: Family[], api: LevelValidationFamily[]): F
 
 function TerminalAnimatedScore({ value }: { value: number }) {
   const [display, setDisplay] = useState(value);
-  
+
   useEffect(() => {
-    if (value === display) return;
-    const diff = value - display;
-    const step = Math.max(1, Math.ceil(diff / 15));
-    
     const timer = setInterval(() => {
-      setDisplay(prev => {
-        if (prev + step >= value) {
+      setDisplay((prev) => {
+        if (prev === value) {
           clearInterval(timer);
-          return value;
+          return prev;
         }
-        return prev + step;
+        const diff = value - prev;
+        const step = Math.max(1, Math.ceil(Math.abs(diff) / 15)) * Math.sign(diff);
+        const next = step > 0 ? Math.min(prev + step, value) : Math.max(prev + step, value);
+        if (next === value) clearInterval(timer);
+        return next;
       });
     }, 30);
     return () => clearInterval(timer);
-  }, [value, display]);
+  }, [value]);
 
-  return <span>{display.toString().padStart(5, '0')}</span>;
+  const text =
+    display >= 0 ? display.toString().padStart(5, '0') : `-${Math.abs(display).toString().padStart(4, '0')}`;
+  return <span>{text}</span>;
 }
 
 export default function Page() {
@@ -98,10 +159,14 @@ export default function Page() {
 function AdoptopiaApp() {
   const searchParams = useSearchParams();
   const isDemoMode = searchParams?.get('demo') === 'true';
+  const [currentLevel, setCurrentLevel] = useState<LevelConfig | null>(null);
+  const [gridSize, setGridSize] = useState<number>(10);
+  const [shelterPosition, setShelterPosition] = useState<Position>({ x: 4, y: 4 });
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const [animals, setAnimals] = useState<Animal[]>(() => cloneGameAnimals());
-  const [families, setFamilies] = useState<Family[]>(() => cloneGameFamilies());
-  const [fuelBudget, setFuelBudget] = useState<number>(MAX_FUEL);
+  const [animals, setAnimals] = useState<Animal[]>([]);
+  const [families, setFamilies] = useState<Family[]>([]);
+  const [fuelBudget, setFuelBudget] = useState<number>(0);
   const [levelBanner, setLevelBanner] = useState<{
     text: string;
     ok: boolean;
@@ -123,7 +188,7 @@ function AdoptopiaApp() {
   const [humanStats, setHumanStats] = useState({ score: 0, distance: 0, assignments: 0 });
   const [gamspyScore, setGamspyScore] = useState<number>(0);
 
-  const [fuel, setFuel] = useState<number>(MAX_FUEL);
+  const [fuel, setFuel] = useState<number>(0);
   const [gamePhase, setGamePhase] = useState<"MANUAL" | "CHAOS" | "GAMSPY" | "COMPLETE">("MANUAL");
   const [isBackendOnline, setIsBackendOnline] = useState<boolean>(true);
   const [gamspyData, setGamspyData] = useState<OptimizeResponse | null>(null);
@@ -131,6 +196,16 @@ function AdoptopiaApp() {
   const [judgeLoading, setJudgeLoading] = useState(false);
   const autoJudgeTriggeredRef = useRef(false);
   const [logs, setLogs] = useState<string[]>(['[SYS] ADOPTOPIA NETWORK INSTANTIATED']);
+  const [dispatchToast, setDispatchToast] = useState<
+    | null
+    | { kind: 'clean'; earned: number }
+    | { kind: 'warning' | 'critical'; earned: number; penalty: number; warnings: CompatibilityWarning[] }
+  >(null);
+  const [criticalFlash, setCriticalFlash] = useState(false);
+  const [scoreMotion, setScoreMotion] = useState<'up' | 'down' | null>(null);
+  const prevScoreRef = useRef<number | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scoreMotionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const addLog = useCallback((msg: string) => {
     setLogs((prev) => {
@@ -138,6 +213,45 @@ function AdoptopiaApp() {
       return newLogs.length > 5 ? newLogs.slice(1) : newLogs;
     });
   }, []);
+
+  const handleLevelSelect = useCallback((level: LevelConfig) => {
+    setCurrentLevel(level);
+    setAnimals(level.animals.map((a) => ({ ...a })));
+    setFamilies(level.families.map((f) => ({ ...f, gridPosition: { ...f.gridPosition } })));
+    setFuelBudget(level.maxFuel);
+    setFuel(level.maxFuel);
+    setGridSize(level.gridSize);
+    setShelterPosition({ ...level.shelterPosition });
+    setAssignments([]);
+    setVehicles([]);
+    setScore(0);
+    setErrorMessage(null);
+    setJudgeReport(null);
+    setLogs(['[SYS] ADOPTOPIA NETWORK INSTANTIATED']);
+  }, []);
+
+  const addDispatchLog = useCallback((msg: string) => {
+    const now = new Date();
+    const hh = now.getHours().toString().padStart(2, '0');
+    const mm = now.getMinutes().toString().padStart(2, '0');
+    setLogs((prev) => {
+      const newLogs = [...prev, `[${hh}:${mm}] ${msg}`];
+      return newLogs.length > 5 ? newLogs.slice(1) : newLogs;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (prevScoreRef.current === null) {
+      prevScoreRef.current = score;
+      return;
+    }
+    const prev = prevScoreRef.current;
+    if (score === prev) return;
+    prevScoreRef.current = score;
+    if (scoreMotionTimerRef.current) clearTimeout(scoreMotionTimerRef.current);
+    setScoreMotion(score > prev ? 'up' : 'down');
+    scoreMotionTimerRef.current = setTimeout(() => setScoreMotion(null), 400);
+  }, [score]);
 
   useEffect(() => {
     async function initCheck() {
@@ -150,6 +264,7 @@ function AdoptopiaApp() {
   }, []);
 
   useEffect(() => {
+    if (!currentLevel) return;
     let cancelled = false;
     let bannerTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -158,10 +273,10 @@ function AdoptopiaApp() {
       if (!online || cancelled) return;
       try {
         const res = await callValidateLevel(
-          cloneGameAnimals(),
-          cloneGameFamilies(),
-          SHELTER_POSITION,
-          MAX_FUEL
+          currentLevel.animals.map((a) => ({ ...a })),
+          currentLevel.families.map((f) => ({ ...f, gridPosition: { ...f.gridPosition } })),
+          currentLevel.shelterPosition,
+          currentLevel.maxFuel
         );
         if (cancelled) return;
 
@@ -193,28 +308,44 @@ function AdoptopiaApp() {
       if (bannerTimer) clearTimeout(bannerTimer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot calibration on mount
-  }, []);
+  }, [currentLevel, addLog]);
 
   const handleDispatch = () => {
     if (!selectedAnimal || !selectedFamily || gamePhase !== "MANUAL") return;
 
-    const path = calculatePath(SHELTER_POSITION, selectedFamily.gridPosition);
+    const path = calculatePath(shelterPosition, selectedFamily.gridPosition);
     const distance = path.length - 1; 
 
     if (distance > fuel) { addLog(`ERR: REQUIRED FUEL ${distance} EXCEEDS MAX ${fuel}`); return; }
-    if (selectedAnimal.allergyRisk && selectedFamily.hasAllergy) { addLog(`ERR: SENSITIVITY CONFLICT DETECTED`); return; }
-    if (selectedAnimal.noiseLevel > selectedFamily.noiseLimit) { addLog(`ERR: NOISE THRESHOLD LIMIT EXCEDED`); return; }
-
-    const energyDifference = Math.abs(selectedAnimal.energyLevel - selectedFamily.energyMatch);
-    const energyBonus = Math.max(0, 10 - energyDifference);
-    const points = energyBonus * 10;
+    const result = evaluateCompatibility(selectedAnimal, selectedFamily, currentLevel);
 
     setAssignments(prev => [...prev, { animal: selectedAnimal, family: selectedFamily, status: 'moving' }]);
     setFuel(prev => prev - distance);
-    setScore(prev => prev + points);
-    setHumanStats(prev => ({ score: prev.score + points, distance: prev.distance + distance, assignments: prev.assignments + 1 }));
-    
-    addLog(`SYS: DISPATCHED ${selectedAnimal.name} TO SYS.NODE_${selectedFamily.id} [PTS:+${points}]`);
+    setScore(prev => prev + result.earned);
+    setHumanStats(prev => ({ score: prev.score + result.earned, distance: prev.distance + distance, assignments: prev.assignments + 1 }));
+
+    const { x, y } = selectedFamily.gridPosition;
+    if (result.isClean) {
+      addDispatchLog(`OPR: ${selectedAnimal.name} → NODE[${x},${y}] — +100 PTS`);
+    } else if (result.earned > 0) {
+      addDispatchLog(`WRN: ${selectedAnimal.name} → NODE[${x},${y}] — PENALTY -${result.penalty} PTS`);
+    } else {
+      addDispatchLog(`CRIT: ${selectedAnimal.name} → NODE[${x},${y}] — SCORE ${result.earned} PTS`);
+    }
+
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    if (result.isClean) {
+      setDispatchToast({ kind: 'clean', earned: result.earned });
+      toastTimerRef.current = setTimeout(() => setDispatchToast(null), 2000);
+    } else if (result.earned > 0) {
+      setDispatchToast({ kind: 'warning', earned: result.earned, penalty: result.penalty, warnings: result.warnings });
+      toastTimerRef.current = setTimeout(() => setDispatchToast(null), 4000);
+    } else {
+      setDispatchToast({ kind: 'critical', earned: result.earned, penalty: result.penalty, warnings: result.warnings });
+      toastTimerRef.current = setTimeout(() => setDispatchToast(null), 5000);
+      setCriticalFlash(true);
+      setTimeout(() => setCriticalFlash(false), 300);
+    }
 
     const vehicleId = `v-${Date.now()}-${selectedAnimal.id}`;
     setVehicles(prev => [...prev, { id: vehicleId, path: path, animalEmoji: selectedAnimal.emoji, familyId: selectedFamily.id }]);
@@ -297,7 +428,7 @@ function AdoptopiaApp() {
         playerAssignments,
         animals,
         families,
-        SHELTER_POSITION,
+        shelterPosition,
         fuelBudget
       );
       setJudgeReport(data);
@@ -309,7 +440,7 @@ function AdoptopiaApp() {
     } finally {
       setJudgeLoading(false);
     }
-  }, [assignments, animals, families, fuelBudget, isBackendOnline, addLog]);
+  }, [assignments, animals, families, fuelBudget, isBackendOnline, addLog, shelterPosition]);
 
   const onVehicleComplete = (vehicle: GameVehicle) => {
     setAssignments(prev => prev.map(a => 
@@ -392,13 +523,62 @@ function AdoptopiaApp() {
     return () => window.removeEventListener('keydown', handleEsc);
   }, [modalItem, judgeReport]);
 
+  if (!currentLevel) {
+    return <LevelSelect onSelect={handleLevelSelect} />;
+  }
+
   return (
     <div className="h-screen w-screen bg-[#0a0f1e] text-[#00ffff] flex flex-col font-mono overflow-hidden min-w-[1280px] select-none">
-      
+      {criticalFlash && (
+        <div className="pointer-events-none fixed inset-0 z-[500] bg-[rgba(255,0,0,0.08)]" aria-hidden />
+      )}
+
+      {dispatchToast && (
+        <div
+          className={`pointer-events-none fixed top-20 right-6 z-[480] w-[22rem] max-w-[calc(100vw-3rem)] border px-3 py-2 text-[10px] leading-snug tracking-widest shadow-lg ${
+            dispatchToast.kind === 'clean'
+              ? 'border-emerald-500/70 bg-black/90 text-emerald-400'
+              : dispatchToast.kind === 'warning'
+                ? 'border-amber-500/80 bg-black/90 text-amber-300'
+                : 'border-red-500/80 bg-black/90 text-red-400'
+          }`}
+          style={{ animation: 'floatUp 0.4s ease-out' }}
+          role="status"
+        >
+          {dispatchToast.kind === 'clean' && <div>✓ DISPATCH CONFIRMED +100 PTS</div>}
+          {dispatchToast.kind === 'warning' && (
+            <div className="space-y-1">
+              <div className="font-bold">⚠ DISPATCH WARNING</div>
+              {dispatchToast.warnings.map((w, i) => (
+                <div key={`${w.type}-${i}-${w.message}`}>
+                  {w.type === 'SPACE'
+                    ? '[ERR: INSUFFICIENT SPACE] — LARGE UNIT CANNOT BE ASSIGNED TO APARTMENT NODE'
+                    : w.message}{' '}
+                  <span className="text-[#94a3b8]">(-{w.penalty} PTS)</span>
+                </div>
+              ))}
+              <div className="pt-1 text-amber-200">NET: +{dispatchToast.earned} PTS</div>
+            </div>
+          )}
+          {dispatchToast.kind === 'critical' && (
+            <div className="space-y-1">
+              <div className="font-bold">✖ CRITICAL MISMATCH</div>
+              {dispatchToast.warnings.map((w, i) => (
+                <div key={`${w.type}-${i}-${w.message}`}>
+                  {w.message} <span className="text-[#94a3b8]">(-{w.penalty} PTS)</span>
+                </div>
+              ))}
+              <div className="pt-1 text-red-300">NET: {dispatchToast.earned} PTS</div>
+            </div>
+          )}
+        </div>
+      )}
+
       <DetailModal 
         item={modalItem}
         type={modalType}
         isAssigned={modalItem ? (modalType === 'animal' ? assignments.some(a => a.animal.id === modalItem.id) : assignments.some(a => a.family.id === modalItem.id)) : false}
+        showSpaceInfo={currentLevel?.id === 2}
         onClose={() => setModalItem(null)}
         onSelect={() => {
            if (modalType === 'animal') setSelectedAnimal(modalItem as Animal);
@@ -424,7 +604,18 @@ function AdoptopiaApp() {
             </span>
           </div>
           <div className="text-xs uppercase tracking-widest text-[#94a3b8]">
-            <span className="opacity-60">SCORE:</span> <span className="text-amber-400">[ <TerminalAnimatedScore value={score} /> ]</span>
+            <span className="opacity-60">SCORE:</span>{' '}
+            <span
+              className={[
+                score >= 0 ? 'text-[#00ffff]' : 'text-[#ff4444]',
+                scoreMotion === 'down' ? 'animate-score-shake animate-score-flash-red' : '',
+                scoreMotion === 'up' ? 'animate-score-flash-green' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              [ <TerminalAnimatedScore value={score} /> ]
+            </span>
           </div>
           <button onClick={resetGame} className="px-5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded tracking-widest transition-colors mb-1 shadow-[0_0_10px_rgba(37,99,235,0.4)]">
             [ RESET ]
@@ -482,6 +673,7 @@ function AdoptopiaApp() {
                         <AnimalCard
                           animal={animal}
                           isCompact
+                          showSpaceInfo={currentLevel?.id === 2}
                           isSelected={selectedAnimal?.id === animal.id}
                           isAssigned={assignments.some((a) => a.animal.id === animal.id)}
                           isHinted={hintedAnimalId === animal.id}
@@ -512,6 +704,7 @@ function AdoptopiaApp() {
                         <FamilyCard
                           family={family}
                           isCompact
+                          showSpaceInfo={currentLevel?.id === 2}
                           isSelected={selectedFamily?.id === family.id}
                           isAssigned={assignments.some((a) => a.family.id === family.id)}
                           isHinted={hintedFamilyId === family.id}
@@ -710,6 +903,30 @@ function AdoptopiaApp() {
                   );
                 })}
               </ul>
+              {currentLevel?.id === 1 && judgeReport !== null && (
+                <button
+                  type="button"
+                  className="proceed-btn mt-4 w-full py-4 font-mono text-[1.1rem] font-bold text-white tracking-widest"
+                  style={{ background: 'linear-gradient(90deg, #7700ff, #ff00ff)' }}
+                  onClick={() => {
+                    setJudgeReport(null);
+                    setScore(0);
+                    setAssignments([]);
+                    setVehicles([]);
+                    setErrorMessage(null);
+                    setCurrentLevel(level2Config);
+                    setAnimals(level2Config.animals.map((a) => ({ ...a })));
+                    setFamilies(level2Config.families.map((f) => ({ ...f, gridPosition: { ...f.gridPosition } })));
+                    setFuel(level2Config.maxFuel);
+                    setFuelBudget(level2Config.maxFuel);
+                    setGridSize(level2Config.gridSize);
+                    setShelterPosition({ ...level2Config.shelterPosition });
+                    setLogs(['[SYS] LOADING LEVEL 02 — SPACE CONSTRAINTS ACTIVE']);
+                  }}
+                >
+                  ▶▶ PROCEED TO LEVEL 2
+                </button>
+              )}
               </div>
             </div>
           )}

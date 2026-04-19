@@ -14,6 +14,8 @@ def _viable_assignment_pairs(req):
                 continue
             if a.noiseLevel > f.noiseLimit:
                 continue
+            if getattr(a, "spaceNeed", "small") == "large" and getattr(f, "spaceType", "apartment") == "apartment":
+                continue
             dist = manhattan_distance(req.shelterPosition, f.gridPosition, req.families)
             if dist > req.remainingFuel:
                 continue
@@ -56,6 +58,8 @@ def solve_single_hint(req):
                 comp = 1
                 if a.allergyRisk and f.hasAllergy: comp = 0
                 if a.noiseLevel > f.noiseLimit: comp = 0
+                if getattr(a, "spaceNeed", "small") == "large" and getattr(f, "spaceType", "apartment") == "apartment":
+                    comp = 0
                 comp_dict[(a.id, f.id)] = comp
                 
                 dist = manhattan_distance(req.shelterPosition, f.gridPosition, req.families)
@@ -226,6 +230,8 @@ def solve_greedy(req, is_fallback=False):
                 continue
             if animal.noiseLevel > family.noiseLimit:
                 continue
+            if getattr(animal, "spaceNeed", "small") == "large" and getattr(family, "spaceType", "apartment") == "apartment":
+                continue
                 
             score = 10 - abs(animal.energyLevel - family.energyMatch)
             if score > best_score:
@@ -291,6 +297,8 @@ def solve_assignment(request):
                 comp = 1
                 if a.allergyRisk and f.hasAllergy: comp = 0
                 if a.noiseLevel > f.noiseLimit: comp = 0
+                if getattr(a, "spaceNeed", "small") == "large" and getattr(f, "spaceType", "apartment") == "apartment":
+                    comp = 0
                 comp_dict[(a.id, f.id)] = comp
                 
                 dist = manhattan_distance(request.shelterPosition, f.gridPosition, request.families)
