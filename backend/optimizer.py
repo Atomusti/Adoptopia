@@ -4,7 +4,7 @@ import pandas as pd
 
 
 def _viable_assignment_pairs(req):
-    """Animals × families that pass allergy, noise, and remaining-fuel checks."""
+    """Animals × families that pass allergy, noise, space, and fuel checks."""
     from main import manhattan_distance
 
     pairs = []
@@ -55,11 +55,10 @@ def solve_single_hint(req):
         
         for a in req.animals:
             for f in req.families:
-                comp = 1
-                if a.allergyRisk and f.hasAllergy: comp = 0
-                if a.noiseLevel > f.noiseLimit: comp = 0
-                if getattr(a, "spaceNeed", "small") == "large" and getattr(f, "spaceType", "apartment") == "apartment":
-                    comp = 0
+                noise_ok = 0 if a.noiseLevel > f.noiseLimit else 1
+                allergy_ok = 0 if (a.allergyRisk and f.hasAllergy) else 1
+                space_ok = 0 if (getattr(a, "spaceNeed", "small") == "large" and getattr(f, "spaceType", "apartment") == "apartment") else 1
+                comp = noise_ok * allergy_ok * space_ok
                 comp_dict[(a.id, f.id)] = comp
                 
                 dist = manhattan_distance(req.shelterPosition, f.gridPosition, req.families)
@@ -294,11 +293,10 @@ def solve_assignment(request):
         
         for a in request.animals:
             for f in request.families:
-                comp = 1
-                if a.allergyRisk and f.hasAllergy: comp = 0
-                if a.noiseLevel > f.noiseLimit: comp = 0
-                if getattr(a, "spaceNeed", "small") == "large" and getattr(f, "spaceType", "apartment") == "apartment":
-                    comp = 0
+                noise_ok = 0 if a.noiseLevel > f.noiseLimit else 1
+                allergy_ok = 0 if (a.allergyRisk and f.hasAllergy) else 1
+                space_ok = 0 if (getattr(a, "spaceNeed", "small") == "large" and getattr(f, "spaceType", "apartment") == "apartment") else 1
+                comp = noise_ok * allergy_ok * space_ok
                 comp_dict[(a.id, f.id)] = comp
                 
                 dist = manhattan_distance(request.shelterPosition, f.gridPosition, request.families)

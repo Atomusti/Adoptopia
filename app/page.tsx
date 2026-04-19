@@ -565,7 +565,10 @@ function AdoptopiaApp() {
               <div className="font-bold">✖ CRITICAL MISMATCH</div>
               {dispatchToast.warnings.map((w, i) => (
                 <div key={`${w.type}-${i}-${w.message}`}>
-                  {w.message} <span className="text-[#94a3b8]">(-{w.penalty} PTS)</span>
+                  {w.type === 'SPACE'
+                    ? '[ERR: INSUFFICIENT SPACE] — LARGE UNIT CANNOT BE ASSIGNED TO APARTMENT NODE'
+                    : w.message}{' '}
+                  <span className="text-[#94a3b8]">(-{w.penalty} PTS)</span>
                 </div>
               ))}
               <div className="pt-1 text-red-300">NET: {dispatchToast.earned} PTS</div>
