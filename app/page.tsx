@@ -416,6 +416,31 @@ function AdoptopiaApp() {
     addLog('SYS: NETWORK RESET. ENGINES PRIMED.');
   };
 
+  const changeLevel = () => {
+    setCurrentLevel(null);
+    setAssignments([]);
+    setVehicles([]);
+    setCelebrations([]);
+    setSelectedAnimal(null);
+    setSelectedFamily(null);
+    setHintedAnimalId(null);
+    setHintedFamilyId(null);
+    setGamspyData(null);
+    setJudgeReport(null);
+    setDispatchToast(null);
+    setCriticalFlash(false);
+    setScore(0);
+    setHumanStats({ score: 0, distance: 0, assignments: 0 });
+    setGamspyScore(0);
+    setFuel(0);
+    setFuelBudget(0);
+    setAnimals([]);
+    setFamilies([]);
+    setGamePhase('MANUAL');
+    autoJudgeTriggeredRef.current = false;
+    setLogs(['[SYS] ADOPTOPIA NETWORK INSTANTIATED']);
+  };
+
   const runJudgeReview = useCallback(async () => {
     if (assignments.length === 0 || !isBackendOnline) return;
     const playerAssignments = assignments.map((a) => ({
@@ -622,6 +647,12 @@ function AdoptopiaApp() {
           </div>
           <button onClick={resetGame} className="px-5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded tracking-widest transition-colors mb-1 shadow-[0_0_10px_rgba(37,99,235,0.4)]">
             [ RESET ]
+          </button>
+          <button
+            onClick={changeLevel}
+            className="px-5 py-1.5 bg-fuchsia-700 hover:bg-fuchsia-600 text-white font-bold text-xs rounded tracking-widest transition-colors mb-1 shadow-[0_0_10px_rgba(192,38,211,0.4)]"
+          >
+            [ CHANGE LEVEL ]
           </button>
         </div>
       </header>
