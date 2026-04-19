@@ -1,26 +1,126 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 @import "tailwindcss";
 
+@theme {
+  --color-term-bg: #0a0f1e;
+  --color-term-grid: #131b2e;
+  --color-term-cyan: #00ffff;
+  --color-term-magenta: #ff00ff;
+  --color-term-text: #94a3b8;
+  --color-term-alert: #ff4444;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --term-bg: #0a0f1e;
+  --term-grid: #131b2e;
+  --term-cyan: #00ffff;
+  --term-magenta: #ff00ff;
+  --term-text: #94a3b8;
+  --term-success: #00ff88;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--term-bg);
+  color: var(--term-cyan);
+  font-family: 'Share Tech Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Custom dark thin scrollbars */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(10, 15, 30, 0.85);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(6, 182, 212, 0.4);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--term-cyan);
+}
+
+@keyframes hintPulse {
+  0%   { box-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff; }
+  50%  { box-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff, 0 0 60px #00ffff; }
+  100% { box-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff; }
+}
+
+.hint-glow {
+  animation: hintPulse 1s ease-in-out infinite;
+  border-color: #00ffff !important;
+  position: relative;
+  z-index: 20;
+}
+
+@keyframes mapHintPulse {
+  0%   { box-shadow: inset 0 0 0 1px #00ffff, 0 0 8px rgba(0, 255, 255, 0.35); }
+  50%  { box-shadow: inset 0 0 0 2px #00ffff, 0 0 24px rgba(0, 255, 255, 0.55); }
+  100% { box-shadow: inset 0 0 0 1px #00ffff, 0 0 8px rgba(0, 255, 255, 0.35); }
+}
+
+.hint-cell-overlay {
+  animation: mapHintPulse 1s ease-in-out infinite;
+}
+
+.term-modal-overlay {
+  background-color: rgba(0, 0, 0, 0.85);
+}
+
+.term-modal-card {
+  background-color: #0d1b2a;
+  border-radius: 4px;
+}
+
+@keyframes starAppear {
+  from {
+    transform: scale(0) rotate(-180deg);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes efficiencyCount {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes levelValidated {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-star-appear {
+  animation: starAppear 0.55s ease-out forwards;
+}
+
+.animate-efficiency-count {
+  animation: efficiencyCount 0.45s ease-out forwards;
+}
+
+.animate-level-validated {
+  animation: levelValidated 3s ease-in-out forwards;
 }

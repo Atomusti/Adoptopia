@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Adoptopia 🐾 - Interactive OR Engine Demo
 
-## Getting Started
+Adoptopia is a technical demonstration of Operations Research directly integrated into a modern Next.js web application, showcasing the immense power of **GAMSPy** natively computing NP-hard combinatorial Assignment & Routing problems behind the scenes of an interactive UI.
 
-First, run the development server:
+## Setup Instructions
+
+### 1. Launch the FastAPI Backend Engine
+The Python ecosystem drives the AI solving mechanics.
 
 ```bash
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
+*Note: The backend starts on `http://localhost:8000`. Keep this terminal open.*
+
+### 2. Launch the Next.js Frontend UI
+The UI layers handle user intervention, animation, and map rendering natively.
+
+```bash
+cd ..
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. Open the Dashboard
+Open your browser and navigate to:
+[http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 4. Cinematic Presentation Demo Mode 🎥
+To run the fully automated, timed interactive presentation scenario (used during live pitch decks without requiring manual clicks), simply append `?demo=true` to the URL:
+[http://localhost:3000?demo=true](http://localhost:3000?demo=true)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Technical Details
+- **Solver Runtime:** React issues a 30s timeout restriction to the `POST /optimize` payload.
+- **Failover Safe:** If GAMSPy environments fail or dependencies break in production, the engine automatically catches `ImportError` exceptions and defaults gracefully to an internal `Greedy` fallback logic pipeline.
